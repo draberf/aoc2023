@@ -395,11 +395,16 @@ def daySeven(input):
 
     from functools import cmp_to_key
 
+    # position of character in string determines its strength
     cardList = "AKQT98765432J" if ADVANCED else "AKQJT98765432"
 
     def cardStrength(card: str) -> int:
+        # index() gets position
+        # further characters (higher index) must be weaker -> negative
         return -cardList.index(card)
 
+    # determine the strength of a card
+    # from '5 of a kind' to '5 different'
     def handStrength(hand: [str]) -> int:
         
         handDict = {c: hand.count(c) for c in cardList}
@@ -442,9 +447,16 @@ def daySeven(input):
             threeOfAKind, twoPair, onePair, highCard
         ]
 
+        # test for first satisfied types
+        # stronger types take precedence -> test for them first
+        # latter types -> higher index -> return negative
         for i, type in enumerate(handTypes):
             if type(): return -i
 
+    # try all possible joker replacements
+    # optimization: instead expand card type functions
+    # (e.g.: fiveOfAKind now doesn't check for 5, but 5-j where
+    # j is the amount of Jokers)
     def replaceJoker(hand: [str]) -> int:
 
         if "*" not in hand: return handStrength(hand)
@@ -452,12 +464,15 @@ def daySeven(input):
         new_hand = hand.replace("*","",1)
         return max([replaceJoker(new_hand+c) for c in cardList])
 
+    # compare hands of equal type
     def cmpEqualStrengthHand(hand1: [str], hand2: [str]) -> int:
         
         if (card1 := hand1[0]) == (card2 := hand2[0]): return cmpEqualStrengthHand(hand1[1:], hand2[1:])
 
+        # jokers don't 
         return cardStrength(card1) - cardStrength(card2)
     
+    # logic for hand strength and bid pairs
     class Game:
 
 
@@ -471,6 +486,7 @@ def daySeven(input):
         def __repr__(self) -> str:
             return f"hand: {self.hand} strength: {self.strength} bid: {self.bid}"
 
+    # compare function for games based on hand strength
     def cmpGame(game1: Game, game2: Game) -> int:
 
         if game1.strength == game2.strength:
@@ -478,9 +494,11 @@ def daySeven(input):
         
         return game1.strength - game2.strength
 
-
+    # create list of all games
     games = [Game(hand, bid) for hand, bid in [line.split() for line in input]]
+    # sort games by strength
     games = sorted(games, key=cmp_to_key(cmpGame))
+    # return index*bid sum
     total = sum([game.bid*(rank+1) for rank, game in enumerate(games)])
     
     return total
